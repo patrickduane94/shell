@@ -95,10 +95,10 @@ int main(int argc, char *argv[]) {
 
         if (input == stdin) {
             // Print prompt in interactive mode
-            char *prompt = getenv("PS1");
-            if (prompt == NULL) {
+            char *prompt = ">_ ";
+            /*if (prompt == NULL) {
                 prompt = "";
-            }
+            }*/
             fprintf(stderr, "%s", prompt);
         }
 
@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (nwords == 0) {
-            fprintf(stderr, "continue");
+            //fprintf(stderr, "continue");
             continue;
         }
 
