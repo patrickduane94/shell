@@ -231,7 +231,6 @@ int main(int argc, char *argv[]) {
 
                 default: // Parent process
                     command_args_index = 0;
-                    child_process_id = child_pid;
                     if (bg_operator == 0) {
                         // If & not present, perform blocking wait
                         waitpid(child_pid, &child_status, 0);
@@ -252,6 +251,7 @@ int main(int argc, char *argv[]) {
                     } else {
                         // Non-blocking wait for background process
                         waitpid(child_pid, &child_status, WNOHANG);
+                        child_process_id = child_pid;
                     }
             }
         }
