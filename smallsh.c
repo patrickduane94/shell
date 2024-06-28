@@ -1,11 +1,3 @@
-/* Sources referenced outside of class materials include (so far):
-Redirection in C: https://www.youtube.com/watch?v=5fnVr-zH-SE&t=834s
-Processes: https://www.youtube.com/watch?v=1R9h-H2UnLs 
-pid_t to char* conversion: https://stackoverflow.com/questions/251900/how-to-convert-a-pid-t
-Many C functions: https://www.tutorialspoint.com/index.htm
-And here: https://linux.die.net/
-*/ 
-
 #define _POSIX_C_SOURCE 200809L
 #define _GNU_SOURCE
 
@@ -36,8 +28,10 @@ int bg_process; // 1 if process is running in background, 0 if not
 int bg_operator = 0; // 1 if background operator & is last word, 0 if not
 int command_args_index = 0; // index of the current argument in the command
 
-void sigint_handler(int sig) {}
-void sigtstp_handler(int sig) {}
+void sigint_handler(int sig) {
+    fprintf(stderr, "\n>_ ");
+    fflush(stderr);
+}
 
 char *command_args[MAX_WORDS]; // will store commands after removing operators
 char *words[512];
@@ -58,7 +52,7 @@ void manage_bg_processes() {
     pid_t id;
     int status;
 
-    while ((id = waitpid(-1, &status, WNOHANG)) > 0) {
+    while ((id = waitpid(-1, &status, WNOHANG | WUNTRACED )) > 0) {
         if (WIFSIGNALED(status)) {
             fprintf(stderr, "Child process %jd done. Signaled %d.\n", (intmax_t)id, WTERMSIG(status));
         }
@@ -74,8 +68,8 @@ void manage_bg_processes() {
 }
 
 int main(int argc, char *argv[]) {
-    signal(SIGINT, sigint_handler);
     signal(SIGTSTP, SIG_IGN);
+    signal(SIGINT, SIG_IGN);
 
     FILE *input = stdin;
     char *input_fn = "(stdin)";
@@ -100,6 +94,7 @@ int main(int argc, char *argv[]) {
                 prompt = "";
             }*/
             fprintf(stderr, "%s", prompt);
+            signal(SIGINT, sigint_handler);
         }
 
         ssize_t line_len = getline(&line, &n, input);
@@ -113,6 +108,8 @@ int main(int argc, char *argv[]) {
             free(words[i]);
             words[i] = exp_word;
         }
+
+        signal(SIGINT, SIG_IGN);
 
         // Check if background operator is last word
         if (nwords > 0 && strcmp(words[nwords - 1], "&") == 0) {
@@ -177,8 +174,6 @@ int main(int argc, char *argv[]) {
 
         if (bg_process == 1) {
             child_pid = fork();
-            signal(SIGINT, sigint_handler);
-            signal(SIGTSTP, SIG_IGN);
 
             switch (child_pid) {
                 case -1:
@@ -186,6 +181,8 @@ int main(int argc, char *argv[]) {
                     exit(1);
 
                 case 0: // Child process
+                    signal(SIGINT, SIG_DFL);
+                    signal(SIGTSTP, SIG_DFL);
                     for (size_t i = 0; i < nwords; i++) {
                         if (strcmp(words[i], ">") == 0) {
                             const char *write_file = words[i + 1];
